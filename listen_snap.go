@@ -3,7 +3,6 @@ package ss
 import (
 	"github.com/vela-ssoc/vela-kit/audit"
 	"github.com/vela-ssoc/vela-kit/lua"
-	"github.com/vela-ssoc/vela-kit/opcode"
 	"github.com/vela-ssoc/vela-kit/pipe"
 	"github.com/vela-ssoc/vela-kit/vela"
 	"go.uber.org/ratelimit"
@@ -19,9 +18,9 @@ type ListenSnap struct {
 	err      error
 	bkt      []string
 	data     []*listen
-	onCreate *pipe.Px
-	onDelete *pipe.Px
-	onUpdate *pipe.Px
+	onCreate *pipe.Chains
+	onDelete *pipe.Chains
+	onUpdate *pipe.Chains
 
 	tomb    *tomb.Tomb
 	co      *lua.LState
@@ -80,6 +79,10 @@ func (snap *ListenSnap) poll(dt time.Duration) {
 			return
 
 		case <-tk.C:
+			if xEnv.Quiet() {
+				continue
+			}
+
 			snap.do(Diff)
 		}
 
@@ -173,7 +176,7 @@ func (snap *ListenSnap) do(mode int) {
 	}
 	defer snap.over()
 
-	of, err := NewOptionFlag("-l -p")
+	of, err := NewOptionFlag("-l")
 	if err != nil {
 		xEnv.Errorf("listen snapshot run fail %v", err)
 		return
@@ -186,6 +189,7 @@ func (snap *ListenSnap) do(mode int) {
 	}
 
 	for _, sock := range sum.Sockets {
+		sum.ref(sock)
 		snap.add(sock)
 	}
 
@@ -197,10 +201,12 @@ func (snap *ListenSnap) do(mode int) {
 
 	switch mode {
 	case Sync:
-		xEnv.TnlSend(opcode.OpListenFull, snap.data)
+		xEnv.Push("/broker/v1/listen/full", snap.data)
+		//xEnv.TnlSend(opcode.OpListenFull, snap.data)
 	case Diff:
 		if snap.enable && snap.report.len() > 0 {
-			xEnv.TnlSend(opcode.OpListenDiff, snap.report)
+			xEnv.Push("/broker/v1/listen/diff", snap.report)
+			//xEnv.TnlSend(opcode.OpListenDiff, snap.report)
 		}
 	}
 

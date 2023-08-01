@@ -30,7 +30,7 @@ func (sock *Socket) P() string {
 		return sock.Process
 	}
 
-	p, e := process.Pid(int(sock.Pid))
+	p, e := process.Fast(int32(sock.Pid))
 	if e != nil {
 		return ""
 	}

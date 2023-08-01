@@ -284,10 +284,10 @@ loop:
 				RemotePort: int(r.id.dPort),
 				UID:        r.uid,
 				IFace:      r.id.iface,
-				Family:     r.family,
+				Family:     uint32(r.family),
 				State:      TCP2String(r.state),
 				Inode:      r.inode,
-				Protocol:   protocol,
+				Protocol:   uint32(protocol),
 				Username:   account.ByUid(r.uid),
 			})
 

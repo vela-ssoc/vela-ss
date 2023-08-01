@@ -33,7 +33,7 @@ type option struct {
 	vsh      *vswitch.Switch
 	cnd      *cond.Cond
 	hook     func(sock *Socket) (stop bool)
-	pid      []int
+	pid      []int32
 	inode    *inode.Inodes
 	nlStates uint32 //netlink
 	ntCnd    *cond.Cond
@@ -51,7 +51,7 @@ func Flag(f *OptionFlag) func(*option) {
 	}
 }
 
-func Pid(v []int) func(*option) {
+func Pid(v []int32) func(*option) {
 	return func(o *option) {
 		o.pid = v
 	}

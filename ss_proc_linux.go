@@ -1,6 +1,3 @@
-//go:build linux
-// +build linux
-
 package ss
 
 import (
@@ -47,7 +44,7 @@ func (s *ss) ntCondMatch(sock *Socket) bool {
 }
 
 func readNt(family, protocol uint8, raw string, header map[int]string) (socket *Socket, droped bool, err error) {
-	socket = &Socket{Family: family, Protocol: protocol}
+	socket = &Socket{Family: uint32(family), Protocol: uint32(protocol)}
 
 	for index, key := range strings.Fields(raw) {
 		switch header[index] {

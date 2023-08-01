@@ -1,28 +1,32 @@
 package ss
 
 import (
+	"fmt"
 	"github.com/vela-ssoc/vela-kit/inode"
 	"github.com/vela-ssoc/vela-kit/kind"
+	"github.com/vela-ssoc/vela-kit/lua"
+	process "github.com/vela-ssoc/vela-process"
 )
 
 type ss struct {
-	CLOSED      int       `json:"closed"`
-	LISTEN      int       `json:"listen"`
-	SYN_SENT    int       `json:"syn_sent"`
-	SYN_RCVD    int       `json:"syn_rcvd"`
-	ESTABLISHED int       `json:"established"`
-	FIN_WAIT1   int       `json:"fin_wait1"`
-	FIN_WAIT2   int       `json:"fin_wait2"`
-	CLOSE_WAIT  int       `json:"close_wait"`
-	CLOSING     int       `json:"closing"`
-	LAST_ACK    int       `json:"last_ack"`
-	TIME_WAIT   int       `json:"time_wait"`
-	DELETE_TCB  int       `json:"delete_tcb, omitempty"`
-	Total       int       `json:"total"`
-	Sockets     []*Socket `json:"sockets"`
-	Err         error     `json:"-"`
-	over        bool      `json:"-"`
-	ov          *option   `json:"-"`
+	CLOSED      int                        `json:"closed"`
+	LISTEN      int                        `json:"listen"`
+	SYN_SENT    int                        `json:"syn_sent"`
+	SYN_RCVD    int                        `json:"syn_rcvd"`
+	ESTABLISHED int                        `json:"established"`
+	FIN_WAIT1   int                        `json:"fin_wait1"`
+	FIN_WAIT2   int                        `json:"fin_wait2"`
+	CLOSE_WAIT  int                        `json:"close_wait"`
+	CLOSING     int                        `json:"closing"`
+	LAST_ACK    int                        `json:"last_ack"`
+	TIME_WAIT   int                        `json:"time_wait"`
+	DELETE_TCB  int                        `json:"delete_tcb, omitempty"`
+	Total       int                        `json:"total"`
+	Sockets     []*Socket                  `json:"sockets"`
+	Err         error                      `json:"-"`
+	over        bool                       `json:"-"`
+	ov          *option                    `json:"-"`
+	process     map[int32]*process.Process `json:"-"`
 }
 
 func (s *ss) Break() {
@@ -54,8 +58,8 @@ func (s *ss) append(v *Socket) {
 		s.LISTEN++
 	case "CLOSING":
 		s.CLOSING++
-
 	}
+
 	s.Total++
 	s.Sockets = append(s.Sockets, v)
 }
@@ -85,13 +89,44 @@ func (s *ss) Byte() []byte {
 	return buf.Bytes()
 }
 
-func (s *ss) match(v *Socket) bool {
-	if s.ov.cnd == nil {
-		return true
+func (s *ss) showL(L *lua.LState) int {
+	if len(s.Sockets) == 0 {
+		return 0
 	}
 
+	if L.Console == nil {
+		return 0
+	}
+
+	L.Console.Println(fmt.Sprintf("CLOSED:%d LISTEN:%d ESTAB:%d TIME_WAIT:%d",
+		s.CLOSED, s.LISTEN, s.ESTABLISHED, s.TIME_WAIT))
+
+	for _, sock := range s.Sockets {
+		buf := kind.NewJsonEncoder()
+		sock.Marshal(buf)
+		buf.End("")
+		L.Console.Println(string(buf.Bytes()))
+	}
+	return 0
+}
+
+func (s *ss) match(v *Socket) bool {
 	if s.ov.flag.listen && v.State != "LISTEN" {
 		return false
+	}
+
+	if n := len(s.ov.pid); n > 0 {
+		for i := 0; i < n; i++ {
+			if uint32(s.ov.pid[i]) == v.Pid {
+				goto filter
+			}
+		}
+		return false
+	}
+
+filter:
+	if s.ov.cnd == nil {
+		return true
 	}
 
 	return s.ov.cnd.Match(v)

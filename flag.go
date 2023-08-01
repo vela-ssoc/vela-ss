@@ -120,7 +120,7 @@ func NewOptionFlag(v string) (*OptionFlag, error) {
 	opt.BoolVar(&of.v6, "6", false, "ipv6")
 	opt.BoolVar(&of.tcp, "t", false, "tcp")
 	opt.BoolVar(&of.udp, "u", false, "udp")
-	opt.BoolVar(&of.ref, "p", false, "process")
+	opt.BoolVar(&of.ref, "p", true, "process")
 	opt.Var(&of.state, "s", "state")
 	opt.BoolVar(&of.allState, "a", true, "state")
 	opt.BoolVar(&of.listen, "l", false, "listen state")

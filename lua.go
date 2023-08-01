@@ -29,9 +29,9 @@ func pidL(L *lua.LState) int {
 	of := NewOptionFlagL(L, 1)
 	of.ref = true
 
-	pid := L.IsInt(2)
+	pid := int32(L.IsInt(2))
 	cnd := cond.CheckMany(L, cond.Seek(3))
-	L.Push(ByPID(pid, Flag(of), Pid([]int{pid}), Cnd(cnd)))
+	L.Push(ByPID(pid, Flag(of), Pid([]int32{pid}), Cnd(cnd)))
 	return 1
 }
 
@@ -40,7 +40,7 @@ func processL(L *lua.LState) int {
 	of.ref = true //关联进程
 	pro := process.CheckById(L, 2)
 	cnd := cond.CheckMany(L, cond.Seek(3))
-	L.Push(ByProcess(pro, Flag(of), Cnd(cnd), Pid([]int{pro.Pid})))
+	L.Push(ByProcess(pro, Flag(of), Cnd(cnd), Pid([]int32{pro.Pid})))
 	return 1
 }
 
@@ -98,16 +98,38 @@ func call(L *lua.LState) int {
 	return 1
 }
 
+func filterL(L *lua.LState) int {
+	cnd := cond.CheckMany(L, cond.Seek(0), cond.WithUnary(true))
+
+	of, err := NewOptionFlag("-a -p")
+	if err != nil {
+		L.RaiseError("vela.ss filter fail %v", err)
+	}
+
+	sum := By(Flag(of), Cnd(cnd))
+	if sum == nil {
+		L.Push(&ss{Err: fmt.Errorf("invalid options")})
+	} else {
+		L.Push(sum)
+	}
+
+	L.Push(sum)
+	return 1
+}
+
 // ss.inode(123123)
 func WithEnv(env vela.Environment) {
 	xEnv = env
 	withKernel()
 	xEnv.Mime(&listen{}, encode, decode)
+	define(env.R())
+
 	kv := lua.NewUserKV()
 	kv.Set("pid", lua.NewFunction(pidL))
 	kv.Set("process", lua.NewFunction(processL))
 	kv.Set("switch", lua.NewFunction(switchL))
 	kv.Set("listen_snapshot", lua.NewFunction(newListenSnapshotL))
+	kv.Set("filter", lua.NewFunction(filterL))
 	kv.Set("inode", lua.NewFunction(indexL))
 
 	xEnv.Set("ss",

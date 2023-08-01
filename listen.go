@@ -15,8 +15,8 @@ const (
 type listen struct {
 	RecordID  string `json:"record_id"`
 	Pid       uint32 `json:"pid"`
-	Family    uint8  `json:"family"`
-	Protocol  uint8  `json:"protocol"`
+	Family    uint32 `json:"family"`
+	Protocol  uint32 `json:"protocol"`
 	LocalIP   string `json:"local_ip"`
 	LocalPort int    `json:"local_port"`
 	Path      string `json:"path"`

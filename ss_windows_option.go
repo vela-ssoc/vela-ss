@@ -16,7 +16,7 @@ type option struct {
 	rate  ratelimit.Limiter
 	cnd   *cond.Cond
 	vsh   *vswitch.Switch
-	pid   []int
+	pid   []int32
 	inode interface{}
 	hook  func(sock *Socket) (stop bool)
 }
@@ -49,7 +49,7 @@ func Inode(v interface{}) func(*option) {
 	return oop
 }
 
-func Pid(v []int) func(*option) {
+func Pid(v []int32) func(*option) {
 	return oop
 }
 

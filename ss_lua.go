@@ -106,6 +106,8 @@ func (s *ss) Index(L *lua.LState, key string) lua.LValue {
 
 	case "switch":
 		return lua.NewFunction(s.switchL)
+	case "show":
+		return lua.NewFunction(s.showL)
 
 	}
 
